@@ -1,0 +1,157 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Player : MonoBehaviour {
+
+
+    private Animator anim;
+
+    private int SpeedRotate = Animator.StringToHash("SpeedRotate");
+    private int SpeedZ = Animator.StringToHash("SpeedZ");
+    private int IsVault = Animator.StringToHash("Vault");
+    private int IsSlide = Animator.StringToHash("Slide");
+    private int ColliderVaultID = Animator.StringToHash("ColliderVault");
+    private int ColliderSlideID = Animator.StringToHash("ColliderSlide");
+    private int IsHoldLogID = Animator.StringToHash("IsHoldLog");
+
+
+    private Vector3 MatchTargetVault = Vector3.zero;
+    private Vector3 MatchTargetSlide = Vector3.zero;
+
+    public GameObject unityLog ;
+    public Transform LeftHand;
+    public Transform RightHand;
+
+
+	void Start () {
+        anim = GetComponent<Animator>();
+        //unityLog = transform.Find("Unity_Log").gameObject;
+	}
+	
+	
+	void Update () {
+
+        anim.SetFloat(SpeedZ, Input.GetAxis("Vertical") * 4.1f);
+        anim.SetFloat(SpeedRotate, Input.GetAxis("Horizontal") * 126f);
+
+        bool isVault = false;
+        bool isSlide = false;
+        if (anim.GetFloat(SpeedZ) > 3 && anim.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.locomotion"))
+        {
+            RaycastHit info;
+            if(Physics.Raycast(transform.position +Vector3.up * 0.3f,transform.forward,out info,4.5f))
+            {
+                //碰到障碍物
+                if(info.collider.tag.CompareTo("Obstacle") == 0)
+                {
+                    if(info.distance > 3 )
+                    {
+                        Vector3 point = info.point;
+                        //将point的y设置为障碍上边缘的位置
+                        point.y = info.collider.transform.position.y + info.collider.bounds.size.y + 0.08f;
+                        MatchTargetVault = point;
+                        isVault = true;
+                        Debug.Log("Vault");
+                    }
+                }  
+            }
+            else if(Physics.Raycast(transform.position + Vector3.up * 1.05f, transform.forward, out info,3f))
+            {
+                if(info.collider.tag.CompareTo("Obstacle") == 0)
+                {
+                    if(info.distance > 2f)
+                    {
+                        Vector3 point = info.point;
+                        //将point的y设置为障碍下边缘的位置
+                        point.y = 0;
+                        MatchTargetSlide = point + transform.forward * 2;
+                        isSlide = true;
+                        Debug.Log("Slide" + info.point + point);
+                    }
+                }
+            }
+        }
+        anim.SetBool(IsVault, isVault);
+        anim.SetBool(IsSlide, isSlide);
+
+        
+        //获取当前动画状态
+        AnimatorStateInfo stateinfo = anim.GetCurrentAnimatorStateInfo(0);
+
+        //如果处于跨越状态且不处于过渡状态
+        if(stateinfo.IsName("Base Layer.Vault") && !anim.IsInTransition(0))
+        {
+            //将人物的手和障碍物上边缘匹配
+            anim.MatchTarget(MatchTargetVault, Quaternion.identity, AvatarTarget.LeftHand, new MatchTargetWeightMask(Vector3.one, 0), 0.32f, 0.40f); 
+        }
+        //如果处于滑行状态且不处于过渡状态
+        if(stateinfo.IsName("Base Layer.Slide")  && !anim.IsInTransition(0))
+        {
+            anim.MatchTarget(MatchTargetSlide, Quaternion.identity, AvatarTarget.Root, new MatchTargetWeightMask(new Vector3(1,0,1), 0), 0.38f, 0.67f);
+        }
+
+        //如果处于跨越状态,Charactercontroller设置为false
+        //stateinfo.IsName("Base Layer.Vault")
+        //stateinfo.shortNameHash == IsVault
+        //if (stateinfo.fullPathHash == Animator.StringToHash("Base Layer.Vault") )
+        //{
+        //    //Debug.Log(stateinfo.normalizedTime);
+        //    //this.transform.GetComponent<CharacterController>().enabled = false;
+        //    ////跨越动画播放结束,Charactercontroller设置为true
+        //    //if (stateinfo.normalizedTime >= 0.99f)
+        //    //{
+        //    //    Debug.Log("OK");
+        //    //    this.transform.GetComponent<CharacterController>().enabled = true;
+        //    //}
+         
+        //}
+
+
+        if (anim.GetFloat(ColliderVaultID) > 0.5f || anim.GetFloat(ColliderSlideID) > 0.5f)
+        {
+            this.transform.GetComponent<CharacterController>().enabled = false;
+        }
+        else
+        {
+            this.transform.GetComponent<CharacterController>().enabled = true;
+        }
+
+      
+    }
+    public void OnTriggerEnter(Collider other)
+    {
+        if(other.tag.CompareTo("Log") == 0)
+        {
+            Destroy(other.gameObject);
+            CarryLog();
+        }
+    }
+
+    void CarryLog()
+    {
+        unityLog.SetActive(true);
+        //转变为抗木头动画
+        anim.SetBool(IsHoldLogID, true);
+    }
+
+    //IK动画使手放在木头上
+    private void OnAnimatorIK(int layerIndex)
+    {
+        if(layerIndex == 1)
+        {
+            int weight = anim.GetBool(IsHoldLogID) ? 1 : 0;
+            //说明被Carry Log这一层调用
+            anim.SetIKPosition(AvatarIKGoal.LeftHand,LeftHand.position);
+            anim.SetIKRotation(AvatarIKGoal.LeftHand, LeftHand.rotation);
+            anim.SetIKPositionWeight(AvatarIKGoal.LeftHand, weight);
+            anim.SetIKRotationWeight(AvatarIKGoal.LeftHand, weight);
+
+            anim.SetIKPosition(AvatarIKGoal.RightHand, RightHand.position);
+            anim.SetIKRotation(AvatarIKGoal.RightHand, RightHand.rotation);
+            anim.SetIKPositionWeight(AvatarIKGoal.RightHand, weight);
+            anim.SetIKRotationWeight(AvatarIKGoal.RightHand, weight);
+        }
+    }
+}
+
