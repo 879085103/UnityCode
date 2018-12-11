@@ -1,0 +1,25 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CameraFollow : MonoBehaviour {
+
+    public Transform m_player;
+    private Transform m_transform;
+    private Vector3 offset;
+	// Use this for initialization
+	void Start () {
+        m_transform = GetComponent<Transform>();
+        offset = m_player.position - m_transform.position;
+	}
+	
+	// Update is called once per frame
+	void Update () {
+        //Debug.Log(offset + " "  + offset + m_player.position +" "  + m_player.TransformDirection(offset) + m_player.position);
+        Vector3 TargetPos = m_player.position - m_player.TransformDirection(offset);
+        m_transform.position = Vector3.Lerp(m_transform.position, TargetPos, Time.deltaTime * 5);
+        //Quaternion rotation = Quaternion.LookRotation(m_player.position - transform.position);
+        //m_transform.rotation = Quaternion.Slerp(m_transform.rotation, rotation, Time.deltaTime * 3f);
+        m_transform.LookAt(m_player.position);
+    }
+}
