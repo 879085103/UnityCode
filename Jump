@@ -1,0 +1,35 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Jump : MonoBehaviour {
+
+    public float Force = 250;
+    private bool isjump = false; //判断是否在跳跃
+    Rigidbody rig;
+	void Start () {
+        rig = this.GetComponent<Rigidbody>();
+	}
+	
+	// Update is called once per frame
+	void Update () {
+
+        Debug.Log(isjump);
+        //当按下空格键且不再跳跃状态时，开始跳跃
+		if(Input.GetKeyDown(KeyCode.Space) && isjump == false)
+        {
+            rig.AddForce(Vector3.up * Force);
+            isjump = true;
+        }
+
+	}
+
+    //当球体与地面接触时，isjump为false
+    void OnCollisionEnter(Collision collision)
+    {
+        if(collision.collider.tag.CompareTo("Plane") == 0)
+        {
+            isjump = false;
+        }
+    }
+}
