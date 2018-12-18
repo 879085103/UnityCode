@@ -1,0 +1,43 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CameraM : MonoBehaviour {
+
+    public float sensitiveMouse = 2.0f;
+    public float sensitiveKeyBoard = 0.1f;
+    public float sensitiveMouseWheel = 10.0f;
+
+    private Camera m_camera;
+    private Transform t_camera;
+    Vector3 camrot; //相机朝向
+
+	void Start () {
+        m_camera = this.GetComponent<Camera>();
+        t_camera = this.GetComponent<Transform>();
+        camrot = t_camera.eulerAngles;
+	}
+	
+	void Update () {
+        // 利用滚轮实现镜头缩进和拉远
+        m_camera.fieldOfView -= Input.GetAxis("Mouse ScrollWheel") * sensitiveMouseWheel;
+
+        //利用鼠标左键实现视角的旋转
+        if(Input.GetMouseButton(0))
+        {
+            float RX = Input.GetAxis("Mouse Y");
+            float RY = Input.GetAxis("Mouse X");
+
+            //camrot.x -= RX;
+            //camrot.y += RY;
+            //t_camera.eulerAngles = camrot * sensitiveMouse;
+
+            t_camera.Rotate(-RX * sensitiveMouse, -RY * sensitiveMouse, 0);
+        }
+
+        //利用键盘控制视角移动
+        float MX = Input.GetAxis("Horizontal");
+        float MY = Input.GetAxis("Vertical");
+        t_camera.Translate(new Vector3(MX * sensitiveKeyBoard, 0, MY * sensitiveKeyBoard));
+	}
+}
